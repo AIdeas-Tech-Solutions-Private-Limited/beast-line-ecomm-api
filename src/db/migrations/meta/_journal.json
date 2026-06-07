@@ -1,0 +1,41 @@
+{
+  "version": "6",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1780053482090,
+      "tag": "0000_military_ikaris",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1780315200000,
+      "tag": "0001_categories_subcategories",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1780394630596,
+      "tag": "0002_numerous_cassandra_nova",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1780656996817,
+      "tag": "0003_real_trauma",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1780657923877,
+      "tag": "0004_first_flatman",
+      "breakpoints": true
+    }
+  ]
+}
