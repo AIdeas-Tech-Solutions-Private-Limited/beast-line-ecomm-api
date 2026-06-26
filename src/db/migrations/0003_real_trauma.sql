@@ -16,7 +16,13 @@ ALTER TABLE "coupons" DROP CONSTRAINT IF EXISTS "coupons_category_id_categories_
 ALTER TABLE "coupons" DROP CONSTRAINT IF EXISTS "coupons_subcategory_id_subcategories_id_fk";
 --> statement-breakpoint
 ALTER TABLE "banners" ALTER COLUMN "link" DROP NOT NULL;--> statement-breakpoint
-ALTER TABLE "banners" ALTER COLUMN "type" SET DATA TYPE jsonb;--> statement-breakpoint
+ALTER TABLE "banners" ALTER COLUMN "type" SET DATA TYPE jsonb USING (
+  CASE
+    WHEN "type" IS NULL OR "type" = '' THEN '[]'::jsonb
+    WHEN "type" ~ '^\[.*\]$' THEN "type"::jsonb
+    ELSE jsonb_build_array("type")
+  END
+);--> statement-breakpoint
 ALTER TABLE "banners" ALTER COLUMN "type" SET DEFAULT '[]'::jsonb;--> statement-breakpoint
 ALTER TABLE "banners" ADD COLUMN IF NOT EXISTS "category_ids" jsonb DEFAULT '[]'::jsonb NOT NULL;--> statement-breakpoint
 ALTER TABLE "banners" ADD COLUMN IF NOT EXISTS "subcategory_ids" jsonb DEFAULT '[]'::jsonb NOT NULL;--> statement-breakpoint
