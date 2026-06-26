@@ -1,0 +1,38 @@
+services:
+  api:
+    build: .
+    container_name: beast-line-api
+    restart: unless-stopped
+    ports:
+      - "7000:7000"
+    env_file:
+      - .env
+    environment:
+      PORT: 7000
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - app-network
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # One-shot migration runner (uses dev deps from the build stage)
+  migrate:
+    build:
+      context: .
+      target: migrate
+    container_name: beast-line-migrate
+    env_file:
+      - .env
+    command: ["npx", "drizzle-kit", "migrate"]
+    networks:
+      - app-network
+    restart: "no"
+
+volumes:
+  uploads_data:
+
+networks:
+  app-network:
+    external: true
