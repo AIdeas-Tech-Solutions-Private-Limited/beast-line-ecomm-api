@@ -4,8 +4,10 @@ import jwt from "jsonwebtoken";
 import { eq } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { users } from "../db/schema.js";
-import { registerSchema, loginSchema, profileUpdateSchema } from "../validators/index.js";
+import { registerSchema, loginSchema, profileUpdateSchema, forgotPasswordSchema, resetPasswordSchema } from "../validators/index.js";
 import { AuthenticatedRequest } from "../middleware/auth.js";
+import { sendOtpMail } from "../../utils/sendMail.js";
+import { generateOtp, storeOtp, verifyOtp } from "../../utils/otpStore.js";
 
 const JWT_SECRET = process.env.JWT_SECRATE || "tyefhw5-krje45-3mdfn";
 
@@ -175,6 +177,72 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response): P
     });
   } catch (error) {
     console.error("Profile Update Error:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+// Forgot Password - Send OTP
+export const forgotPassword = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const parseResult = forgotPasswordSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({ error: parseResult.error.errors[0].message });
+      return;
+    }
+
+    const { email } = parseResult.data;
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.email, email.toLowerCase()),
+    });
+
+    if (!user) {
+      res.status(400).json({ error: "No account found with this email." });
+      return;
+    }
+
+    const otp = generateOtp();
+    storeOtp(email, otp);
+
+    const sent = await sendOtpMail(email, otp);
+    if (!sent) {
+      res.status(500).json({ error: "Failed to send OTP. Please try again." });
+      return;
+    }
+
+    res.status(200).json({ success: true, message: "OTP sent to your email." });
+  } catch (error) {
+    console.error("Forgot Password Error:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+// Reset Password with OTP
+export const resetPassword = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const parseResult = resetPasswordSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({ error: parseResult.error.errors[0].message });
+      return;
+    }
+
+    const { email, otp, newPassword } = parseResult.data;
+
+    const isValid = verifyOtp(email, otp);
+    if (!isValid) {
+      res.status(400).json({ error: "Invalid or expired OTP." });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    await db.update(users)
+      .set({ passwordHash })
+      .where(eq(users.email, email.toLowerCase()));
+
+    res.status(200).json({ success: true, message: "Password reset successful." });
+  } catch (error) {
+    console.error("Reset Password Error:", error);
     res.status(500).json({ error: "Internal server error." });
   }
 };
